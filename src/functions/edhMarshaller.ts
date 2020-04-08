@@ -24,17 +24,21 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
         return;
     }
 
+    console.log("Records: ", records);
+
     // Instantiate the Simple Queue Service
     const sqService: SQService = new SQService(new SQS());
     const sendMessagePromises: Array<Promise<PromiseResult<SendMessageResult, AWSError>>> = [];
 
     records.forEach((record: StreamRecord) => {
         const targetQueue = getTargetQueueFromSourceARN(record.eventSourceARN);
+        console.log("Target Queue", targetQueue);
         const eventType = record.eventName; //INSERT, MODIFY or REMOVE
         const message = {
             eventType,
             body: record.dynamodb
         };
+        console.log("Output message", message);
         sendMessagePromises.push(sqService.sendMessage(JSON.stringify(message), targetQueue))
     });
 
