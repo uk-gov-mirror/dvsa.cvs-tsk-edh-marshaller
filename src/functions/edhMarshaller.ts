@@ -31,6 +31,8 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
     const sendMessagePromises: Array<Promise<PromiseResult<SendMessageResult, AWSError>>> = [];
 
     records.forEach((record: StreamRecord) => {
+        console.log("Record: ", record);
+        console.log("New image: ", record.dynamodb?.NewImage)
         const targetQueue = getTargetQueueFromSourceARN(record.eventSourceARN);
         console.log("Target Queue", targetQueue);
         const eventType = record.eventName; //INSERT, MODIFY or REMOVE
