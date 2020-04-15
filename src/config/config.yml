@@ -16,4 +16,4 @@ targets:
   test-results:
     queueName: cvs-edh-dispatcher-test-results-${BRANCH}-queue
   activities:
-    queueName: cvs-edh-dispatcher-activities-cvsb-10773-queue
+    queueName: cvs-edh-dispatcher-activities-${BRANCH}-queue
