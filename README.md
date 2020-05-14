@@ -5,7 +5,6 @@ handles update requests destined for EDH and pipes them to SQS queues
 - NodeJS 8.10
 - Typescript - `npm install -g typescript`
 - Serverless - `npm install -g serverless`
-- Docker
 
 ### Installing
 - Install dependencies - `npm install`
@@ -13,31 +12,11 @@ handles update requests destined for EDH and pipes them to SQS queues
 ### Building
 - Building without source maps - `npm run build`
 - Building with source maps - `npm run build:dev`
-- Building the docker containers - `npm run build:docker`
-
-### Running
-- The app can be started by running `npm run start:docker`.
 
 ### Configuration
 The configuration file can be found under `src/config/config.yml`.
 Environment variable injection is possible with the syntax:
 `${BRANCH}`, or you can specify a default value: `${BRANCH:local}`.
-
-#### SQS
-SQS contains configuration for the local environment or the AWS environment. Locally, you need to provide the `localhost` region and the SQS endpoint, which in this case is the address of a docker image. `apiVersion` and `queueName` need to be provided for both environments.
-```
-sqs:
-  local:
-    params:
-      region: localhost
-      endpoint: http://sqs:9324
-      apiVersion: "2012-11-05"
-    queueName: cert-gen-q
-  remote:
-    params:
-      apiVersion: "2012-11-05"
-    queueName: cert-gen-q
-```
 
 ### Git Hooks
 
@@ -72,3 +51,5 @@ In order to test, you need to run the following:
 ### Environmental variables
 
 - The `BRANCH` environment variable indicates in which environment is this application running. Not setting this variable will result in defaulting to `local`.
+- The `DEBUG` environment variable is used as a feature flag, to enable more extensive logging. Does more logging if value is `TRUE`, otherwise off
+- The `VALIDATION` environment variable is used as a feature flag, to enable validation. Does validation if value is `TRUE`, otherwise off
