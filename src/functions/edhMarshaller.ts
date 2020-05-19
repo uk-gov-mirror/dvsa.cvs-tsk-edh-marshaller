@@ -4,7 +4,7 @@ import {SQService} from "../services/SQService";
 import {PromiseResult} from "aws-sdk/lib/request";
 import {SendMessageResult} from "aws-sdk/clients/sqs";
 import {GetRecordsOutput} from "aws-sdk/clients/dynamodbstreams";
-import {getTargetQueueFromSourceARN} from "../utils/Utils";
+import {debugOnlyLog, getTargetQueueFromSourceARN} from "../utils/Utils";
 import {StreamRecord} from "../models";
 
 /**
@@ -24,17 +24,23 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
         return;
     }
 
+    debugOnlyLog("Records: ", records);
+
     // Instantiate the Simple Queue Service
     const sqService: SQService = new SQService(new SQS());
     const sendMessagePromises: Array<Promise<PromiseResult<SendMessageResult, AWSError>>> = [];
 
     records.forEach((record: StreamRecord) => {
+        debugOnlyLog("Record: ", record);
+        debugOnlyLog("New image: ", record.dynamodb?.NewImage)
         const targetQueue = getTargetQueueFromSourceARN(record.eventSourceARN);
+        debugOnlyLog("Target Queue", targetQueue);
         const eventType = record.eventName; //INSERT, MODIFY or REMOVE
         const message = {
             eventType,
             body: record.dynamodb
         };
+        debugOnlyLog("Output message", message);
         sendMessagePromises.push(sqService.sendMessage(JSON.stringify(message), targetQueue))
     });
 

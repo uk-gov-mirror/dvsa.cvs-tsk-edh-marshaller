@@ -50,7 +50,10 @@ class SQService {
         };
 
         if (messageAttributes) {
-            Object.assign(params, { MessageAttributes: messageAttributes });
+            Object.assign(params, { MessageAttributes: {
+                ...messageAttributes,
+                AWSTraceHeader: process.env._X_AMZN_TRACE_ID
+            } });
         }
 
         // Send a message to the queue
