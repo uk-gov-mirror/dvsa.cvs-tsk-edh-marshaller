@@ -47,7 +47,11 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
     return Promise.all(sendMessagePromises)
     .catch((error: AWSError) => {
         console.error(error);
-        throw error;
+        console.log("records");
+        console.log(records);
+        if(error.code !== "InvalidParameterValue"){
+            throw error;
+        }
     });
 };
 
