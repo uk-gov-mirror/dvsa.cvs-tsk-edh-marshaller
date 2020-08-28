@@ -7,5 +7,6 @@ export interface StreamRecord extends Record {
 export interface TargetConfig {
   [target: string]: {
     queueName: string
+    dlqName: string
   }
 }

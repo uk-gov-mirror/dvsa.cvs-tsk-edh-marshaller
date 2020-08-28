@@ -30,59 +30,66 @@ describe("edhMarshaller Function", () => {
   });
 
   describe("with good event", () => {
-    const event = {
-      Records: [{
-        "eventSourceARN":"test-results",
-        "eventName":"INSERT",
-        "dynamodb":{
-          "some": "thing"
-        }
-      }]
-    };
-    it("should invoke SQS service with correct params", async () => {
-      const sendMessageMock = jest.fn().mockResolvedValue("howdy");
-      jest.spyOn(SQService.prototype, "sendMessage").mockImplementation(sendMessageMock);
+    let event: any;
+    beforeEach(() => {
+      event = {
+        Records: [{
+          "eventSourceARN":"test-results",
+          "eventName":"INSERT",
+          "dynamodb":{
+            "some": "thing",
+            "NewImage": "payload",
+            "SizeBytes": 1554
+          }
+        }]
+      };
+    });
+    afterEach(() => {
+      event = null;
+    });
 
-      await edhMarshaller(event, ctx, () => { return; });
-      expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify({eventType:"INSERT",body:{"some":"thing"}}), "cvs-edh-dispatcher-test-results-local-queue");
-      expect(sendMessageMock).toHaveBeenCalledTimes(1);
+    context("when the item size is smaller than 256KB", () => {
+        it("should invoke SQS service with correct params", async () => {
+        const sendMessageMock = jest.fn().mockResolvedValue("howdy");
+        jest.spyOn(SQService.prototype, "sendMessage").mockImplementation(sendMessageMock);
+
+        await edhMarshaller(event, ctx, () => { return; });
+        expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify({eventType: "INSERT", body: {"some":"thing", "NewImage": "payload", "SizeBytes": 1554}}), "cvs-edh-dispatcher-test-results-local-queue");
+        expect(sendMessageMock).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    context("when the item size is bigger than 256KB", () => {
+      it("should invoke SQS service with correct params", async () => {
+        event.Records[0].dynamodb.SizeBytes = 300000;
+        const expectedMessage = {
+          eventSourceARN: "test-results",
+          eventName: "INSERT",
+          dynamodb: {
+            some: "thing",
+            SizeBytes: 300000
+          }
+        };
+        const sendMessageMock = jest.fn().mockResolvedValue("howdy");
+        jest.spyOn(SQService.prototype, "sendMessage").mockImplementation(sendMessageMock);
+
+        await edhMarshaller(event, ctx, () => { return; });
+        expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify(expectedMessage), "cvs-edh-dispatcher-test-results-local-dlq");
+        expect(sendMessageMock).toHaveBeenCalledTimes(1);
+      });
     });
 
     describe("when SQService throws an error", () => {
-      context("and the error is from 4XX error family, except 429", () => {
-        it("should NOT throw the error up and return undefined so the Lambda won't retry", async () => {
-          jest.spyOn(SQService.prototype, "sendMessage").mockRejectedValue({statusCode: 413, message: "It broke"});
-
-            const result = await edhMarshaller(event, ctx, () => { return; });
-            expect(result).toEqual(undefined);
-        });
-      });
-
-      context("and the error is 429", () => {
         it("should throw the error up", async () => {
-          jest.spyOn(SQService.prototype, "sendMessage").mockRejectedValue({statusCode: 429, message: "It broke"});
+          jest.spyOn(SQService.prototype, "sendMessage").mockRejectedValue({statusCode: 400, message: "It broke"});
 
           try{
             expect(await edhMarshaller(event, ctx, () => { return; })).toThrowError();
           } catch(e) {
-            expect(e.statusCode).toEqual(429);
+            expect(e.statusCode).toEqual(400);
             expect(e.message).toEqual("It broke");
           }
         });
-      });
-
-      context("and the error is from 5XX error family", () => {
-        it("should throw the error up", async () => {
-          jest.spyOn(SQService.prototype, "sendMessage").mockRejectedValue({statusCode: 500, message: "It broke"});
-
-          try{
-            expect(await edhMarshaller(event, ctx, () => { return; })).toThrowError();
-          } catch(e) {
-            expect(e.statusCode).toEqual(500);
-            expect(e.message).toEqual("It broke");
-          }
-        });
-      });
     });
   });
 });
