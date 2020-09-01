@@ -42,21 +42,19 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
         const eventType = record.eventName; //INSERT, MODIFY or REMOVE
 
         // check if the payload is bigger than 256KB - SQS has a limit of 256Kb per message
-        console.log("Message size", record.dynamodb!.SizeBytes!);
+        debugOnlyLog("Message size", record.dynamodb!.SizeBytes!);
         if (record.dynamodb!.SizeBytes! > 262144) {
-            console.log("Message is bigger");
             // message is too big - send to DLQ only relevant details
             delete record.dynamodb?.NewImage;
             debugOnlyLog("Output DLQ message", record);
             sendMessagePromises.push(sqService.sendMessage(JSON.stringify(record), targetDLQ));
         } else {
-            console.log("Message is smaller than 256kb");
             // send to target Queue
             const message = {
                 eventType,
                 body: record.dynamodb
             };
-            debugOnlyLog("Output message", message);
+            debugOnlyLog("Output SQS message", message);
             sendMessagePromises.push(sqService.sendMessage(JSON.stringify(message), targetQueue))
         }
     });
@@ -67,17 +65,7 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
             console.log("records");
             console.log(records);
             // retry the message up to X times -> then it's moved automatically to DLQ - configurable from AWS
-            console.log("Should retry up to X times");
             throw error;
-
-            // do not retry 4XX error codes, except 429. Retry only 500 and 429.
-            // if ((error.statusCode >= 400 && error.statusCode < 500) && error.statusCode !== 429) {
-            //     // return something so the Lambda won't retry
-            //     return;
-            // } else {
-            //     // throw the error so the Lambda will retry
-            //     throw error;
-            // }
         });
 };
 
