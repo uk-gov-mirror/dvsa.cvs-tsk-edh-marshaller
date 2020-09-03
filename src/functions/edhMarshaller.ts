@@ -4,7 +4,7 @@ import {SQService} from "../services/SQService";
 import {PromiseResult} from "aws-sdk/lib/request";
 import {SendMessageResult} from "aws-sdk/clients/sqs";
 import {GetRecordsOutput} from "aws-sdk/clients/dynamodbstreams";
-import {debugOnlyLog, getTargetQueueFromSourceARN} from "../utils/Utils";
+import {debugOnlyLog, getDLQName, getTargetQueueFromSourceARN} from "../utils/Utils";
 import {StreamRecord} from "../models";
 
 /**
@@ -33,10 +33,8 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
     records.forEach((record: StreamRecord) => {
         debugOnlyLog("Record: ", record);
         debugOnlyLog("New image: ", record.dynamodb?.NewImage);
-        const targetQueues = getTargetQueueFromSourceARN(record.eventSourceARN);
-        debugOnlyLog("Target Queue and DLQ", targetQueues);
-        const targetQueue = targetQueues.targetQueue;
-        const targetDLQ = targetQueues.targetDlq;
+        const targetQueue = getTargetQueueFromSourceARN(record.eventSourceARN);
+        const targetDLQ = getDLQName();
         debugOnlyLog("Target Queue", targetQueue);
         debugOnlyLog("Target DLQ", targetDLQ);
         const eventType = record.eventName; //INSERT, MODIFY or REMOVE
@@ -45,7 +43,7 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
         debugOnlyLog("Message size", record.dynamodb!.SizeBytes!);
         if (record.dynamodb!.SizeBytes! > 262144) {
             // message is too big - send to DLQ only relevant details
-            delete record.dynamodb?.NewImage;
+            delete record.dynamodb!.NewImage;
             debugOnlyLog("Output DLQ message", record);
             sendMessagePromises.push(sqService.sendMessage(JSON.stringify(record), targetDLQ));
         } else {

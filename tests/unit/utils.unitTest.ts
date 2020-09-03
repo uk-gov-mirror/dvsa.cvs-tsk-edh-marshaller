@@ -8,11 +8,9 @@ describe("utils", () => {
         Configuration.instance = new Configuration("../../src/config/config.yml");
         describe("when ARN has a matching config", () => {
             it("gets target from config properly", () => {
-                const expectedQueue = Configuration.getInstance().getTargets()["test-results"].queueName;
-                const expectedDlq = Configuration.getInstance().getTargets()["test-results"].dlqName;
+                const expected = Configuration.getInstance().getTargets()["test-results"].queueName;
                 const target = getTargetQueueFromSourceARN("arn:aws:dynamodb:horse-east-8:00626016:table/cvs-cvsb-xxx-test-results/stream/2024-03-30T15:55:39.197");
-                expect(target.targetQueue).toEqual(expectedQueue);
-                expect(target.targetDlq).toEqual(expectedDlq);
+                expect(target).toEqual(expected)
             });
         });
 

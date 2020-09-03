@@ -74,7 +74,7 @@ describe("edhMarshaller Function", () => {
         jest.spyOn(SQService.prototype, "sendMessage").mockImplementation(sendMessageMock);
 
         await edhMarshaller(event, ctx, () => { return; });
-        expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify(expectedMessage), "cvs-edh-dispatcher-test-results-local-dlq");
+        expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify(expectedMessage), "edh-dispatcher-local-dlq");
         expect(sendMessageMock).toHaveBeenCalledTimes(1);
       });
     });

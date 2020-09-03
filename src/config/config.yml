@@ -15,10 +15,10 @@ sqs:
 targets:
   test-results:
     queueName: cvs-edh-dispatcher-test-results-${BRANCH}-queue
-    dlqName: cvs-edh-dispatcher-test-results-${BRANCH}-dlq
   activities:
     queueName: cvs-edh-dispatcher-activities-${BRANCH}-queue
-    dlqName: cvs-edh-dispatcher-activities-${BRANCH}-dlq
   technical-records:
     queueName: cvs-edh-dispatcher-technical-records-${BRANCH}-queue
-    dlqName: cvs-edh-dispatcher-technical-records-${BRANCH}-dlq
+
+dlq:
+  name: edh-dispatcher-${BRANCH}-dlq

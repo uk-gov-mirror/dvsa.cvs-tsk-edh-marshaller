@@ -55,6 +55,10 @@ class Configuration {
         return this.config.targets;
     }
 
+    public getDLQName(): string {
+        return this.config.dlq.name;
+    }
+
 }
 
 export { Configuration };

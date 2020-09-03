@@ -12,10 +12,11 @@ export const getTargetQueueFromSourceARN = (arn: string) => {
         debugOnlyLog("valid targets: ", validTargets);
         throw new Error(ERROR.NO_UNIQUE_TARGET);
     }
-    return {
-        targetQueue: targets[validTargets[0]].queueName,
-        targetDlq: targets[validTargets[0]].dlqName
-    };
+    return targets[validTargets[0]].queueName;
+};
+
+export const getDLQName = () => {
+  return Configuration.getInstance().getDLQName();
 };
 
 export const debugOnlyLog = (...args: any) => {
