@@ -8,6 +8,7 @@ sqs:
       - cvs-edh-test-results-q
   remote:
     params:
+      region: "eu-west-1"
       apiVersion: "2012-11-05"
     queueName:
       - cvs-edh-test-results-${BRANCH}-queue
@@ -18,4 +19,4 @@ targets:
   activities:
     queueName: cvs-edh-dispatcher-activities-${BRANCH}-queue
   technical-records:
-    queueName: cvs-edh-dispatcher-technical-records-${BRANCH}-queue
+    queueName: cvs-edh-dispatcher-technical_records-${BRANCH}-queue
