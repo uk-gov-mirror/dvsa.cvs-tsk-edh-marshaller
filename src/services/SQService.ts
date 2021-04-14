@@ -32,6 +32,7 @@ class SQService {
         const env: string = (!process.env.BRANCH || process.env.BRANCH === "local") ? "local" : "remote";
         this.config = config.sqs[env];
 
+        this.config.params.region = 'eu-west-1';
         AWSConfig.sqs = this.config.params;
         debugOnlyLog("SQS config", AWSConfig.sqs);
         debugOnlyLog("SQS config .region", AWSConfig.sqs?.region);
