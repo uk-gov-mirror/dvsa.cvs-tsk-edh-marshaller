@@ -35,13 +35,7 @@ const edhMarshaller: Handler = async (event: GetRecordsOutput, context?: Context
         debugOnlyLog("New image: ", record.dynamodb?.NewImage)
         const targetQueue = getTargetQueueFromSourceARN(record.eventSourceARN);
         debugOnlyLog("Target Queue", targetQueue);
-        const eventType = record.eventName; //INSERT, MODIFY or REMOVE
-        const message = {
-            eventType,
-            body: record.dynamodb
-        };
-        debugOnlyLog("Output message", message);
-        sendMessagePromises.push(sqService.sendMessage(JSON.stringify(message), targetQueue))
+        sendMessagePromises.push(sqService.sendMessage(JSON.stringify(record), targetQueue))
     });
 
     return Promise.all(sendMessagePromises)
