@@ -50,7 +50,6 @@ describe("edhMarshaller Function", () => {
           eventSourceARN: "test-results",
           eventName:"INSERT",
           dynamodb: {"some":"thing"},
-          eventType:"INSERT"
         }),
         "cvs-edh-dispatcher-test-results-local-queue"
       );
