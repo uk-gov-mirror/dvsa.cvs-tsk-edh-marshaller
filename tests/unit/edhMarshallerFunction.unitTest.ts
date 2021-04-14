@@ -49,7 +49,8 @@ describe("edhMarshaller Function", () => {
         JSON.stringify({
           eventSourceARN: "test-results",
           eventName:"INSERT",
-          dynamodb: {"some":"thing"}
+          dynamodb: {"some":"thing"},
+          eventType:"INSERT"
         }),
         "cvs-edh-dispatcher-test-results-local-queue"
       );
