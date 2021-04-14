@@ -16,8 +16,7 @@ export const getTargetQueueFromSourceARN = (arn: string) => {
 };
 
 export const debugOnlyLog = (...args: any) => {
-    // TODO un-comment this code once sorted
-    // if(process.env.DEBUG === "TRUE") {
+    if(process.env.DEBUG === "TRUE") {
         console.log(...args);
-    // }
+    }
 }
