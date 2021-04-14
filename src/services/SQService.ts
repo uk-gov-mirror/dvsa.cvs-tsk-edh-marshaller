@@ -3,6 +3,7 @@ import {Configuration} from "../utils/Configuration";
 import {PromiseResult} from "aws-sdk/lib/request";
 import {AWSError, config as AWSConfig} from "aws-sdk";
 import {ERROR} from "../models/enums";
+import {debugOnlyLog} from "../utils/Utils";
 // tslint:disable-next-line
 const AWSXRay = require("aws-xray-sdk");
 
@@ -27,10 +28,13 @@ class SQService {
         }
 
         // Not defining BRANCH will default to local
+        debugOnlyLog("branch", process.env.BRANCH);
         const env: string = (!process.env.BRANCH || process.env.BRANCH === "local") ? "local" : "remote";
         this.config = config.sqs[env];
 
         AWSConfig.sqs = this.config.params;
+        debugOnlyLog("SQS config", AWSConfig.sqs);
+        debugOnlyLog("SQS config .region", AWSConfig.sqs?.region);
     }
 
     /**
@@ -55,6 +59,8 @@ class SQService {
                 AWSTraceHeader: process.env._X_AMZN_TRACE_ID
             } });
         }
+
+        debugOnlyLog("sendMessage params", params);
 
         // Send a message to the queue
         return this.sqsClient.sendMessage(params as SQS.Types.SendMessageRequest).promise();
