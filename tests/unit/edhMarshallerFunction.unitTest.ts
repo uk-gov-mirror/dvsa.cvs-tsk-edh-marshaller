@@ -45,7 +45,14 @@ describe("edhMarshaller Function", () => {
       jest.spyOn(SQService.prototype, "sendMessage").mockImplementation(sendMessageMock);
 
       await edhMarshaller(event, ctx, () => { return; });
-      expect(sendMessageMock).toHaveBeenCalledWith(JSON.stringify({eventType:"INSERT",body:{"some":"thing"}}), "cvs-edh-dispatcher-test-results-local-queue");
+      expect(sendMessageMock).toHaveBeenCalledWith(
+        JSON.stringify({
+          eventSourceARN: "test-results",
+          eventName:"INSERT",
+          dynamodb: {"some":"thing"},
+        }),
+        "cvs-edh-dispatcher-test-results-local-queue"
+      );
       expect(sendMessageMock).toHaveBeenCalledTimes(1);
     });
 
