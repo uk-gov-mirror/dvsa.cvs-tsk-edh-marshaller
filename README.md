@@ -23,6 +23,7 @@ You will also require Docker to run the service locally if you wish to mock exte
 ## Architecture
 
 [EDH Architecture](https://wiki.dvsacloud.uk/display/HVT/CVS+EDH+Architecture)
+[Integration pattern](https://wiki.dvsacloud.uk/pages/viewpage.action?pageId=70945601)
 
 ### End to end design
 
