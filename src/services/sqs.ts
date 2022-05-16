@@ -2,27 +2,33 @@ import SQS, {
   GetQueueUrlResult,
   MessageBodyAttributeMap,
   SendMessageResult,
-} from "aws-sdk/clients/sqs";
-import { Configuration } from "../utils/Configuration";
-import { PromiseResult } from "aws-sdk/lib/request";
-import { AWSError, config as AWSConfig } from "aws-sdk";
-import { ERROR } from "../models/enums";
-// tslint:disable-next-line
-const AWSXRay = require("aws-xray-sdk");
+} from 'aws-sdk/clients/sqs';
+import { PromiseResult } from 'aws-sdk/lib/request';
+import AWSXRay from 'aws-xray-sdk';
+import { AWSError, config as AWSConfig } from 'aws-sdk';
+import { ERROR } from '../models/enums';
+import { Configuration, MarshallerConfig } from '../utils/config';
+// eslint-disable-next-line
+
+interface SQSConfig {
+  params: SQS.ClientConfiguration;
+  queueName: [];
+}
 
 /**
  * Service class for interfacing with the Simple Queue Service
  */
-class SQService {
-  private readonly sqsClient: SQS;
-  private readonly config: any;
+class SQSService {
+  private sqsClient: SQS;
+
+  private config: SQSConfig;
 
   /**
    * Constructor for the ActivityService class
    * @param sqsClient - The Simple Queue Service client
    */
   constructor(sqsClient: SQS) {
-    const config: any = Configuration.getInstance().getConfig();
+    const config: MarshallerConfig = Configuration.getInstance().getConfig();
     this.sqsClient = AWSXRay.captureAWSClient(sqsClient);
 
     if (!config.sqs) {
@@ -30,13 +36,9 @@ class SQService {
     }
 
     // Not defining BRANCH will default to local
-    const env: string =
-      !process.env.BRANCH || process.env.BRANCH === "local"
-        ? "local"
-        : "remote";
-    this.config = config.sqs[env];
+    this.config = config.sqs[!process.env.BRANCH || process.env.BRANCH === 'local' ? 'local' : 'remote'];
 
-    AWSConfig.sqs = this.config.params;
+    AWSConfig.sqs = this.configuration.params;
   }
 
   /**
@@ -45,11 +47,7 @@ class SQService {
    * @param messageAttributes - A MessageAttributeMap
    * @param queueName - The queue name
    */
-  public async sendMessage(
-    messageBody: string,
-    queueName: string,
-    messageAttributes?: MessageBodyAttributeMap
-  ): Promise<PromiseResult<SendMessageResult, AWSError>> {
+  public async sendMessage(messageBody: string, queueName: string, messageAttributes?: MessageBodyAttributeMap): Promise<PromiseResult<SendMessageResult, AWSError>> {
     // Get the queue URL for the provided queue name
     const queueUrlResult: GetQueueUrlResult = await this.sqsClient
       .getQueueUrl({ QueueName: queueName })
@@ -74,6 +72,26 @@ class SQService {
       .sendMessage(params as SQS.Types.SendMessageRequest)
       .promise();
   }
+
+  // accessor method added to aid unit testing
+  get client(): SQS {
+    return this.sqsClient;
+  }
+
+  // accessor method added to aid unit testing
+  set client(sqsClient: SQS) {
+    this.sqsClient = sqsClient;
+  }
+
+  // accessor method added to aid unit testing
+  get configuration(): SQSConfig {
+    return this.config;
+  }
+
+  // accessor method added to aid unit testing
+  set configuration(config: SQSConfig) {
+    this.config = config;
+  }
 }
 
-export { SQService };
+export { SQSService };
