@@ -36,8 +36,6 @@ describe('edhMarshaller Function', () => {
 
   describe('if the event is undefined', () => {
     it('should return undefined', async () => {
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
-
       jest.spyOn(console, 'error');
 
       await edhMarshaller(undefined, ctx, () => { return; });
@@ -48,8 +46,6 @@ describe('edhMarshaller Function', () => {
 
   describe('if the event has no records', () => {
     it('should return undefined', async () => {
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
-
       jest.spyOn(console, 'error');
 
       await edhMarshaller({ something: 'not records' }, ctx, () => { return; });
@@ -58,51 +54,67 @@ describe('edhMarshaller Function', () => {
     });
   });
 
-  describe('with good technical-records event', () => {
-    const techEvent = {
-      Records: [
-        {
-          eventID: '2222',
-          eventSourceARN: 'technical-records',
-          eventName: 'INSERT',
-          dynamodb: {
-            some: 'thing',
+  describe('if record has no eventID', () => {
+    it('should log an error', async () => {
+      const event = {
+        Records: [
+          {
+            eventSourceARN: 'flat-tech-records',
+            eventName: 'INSERT',
+            dynamodb: {
+              some: 'thing',
+            },
           },
-        },
-      ],
-    };
-    
-    it('should not load onto SQS if PROCESS_FLAT_TECH_RECORDS is true', async () => {
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'true';
-      process.env.TECHNICAL_RECORDS_UPDATE_STORE_SQS_URL = 'URL';
+        ],
+      };
 
-      await edhMarshaller(techEvent, ctx, () => { return; });
+      jest.spyOn(console, 'error');
+      await edhMarshaller(event, ctx, () => { return; });
 
-      expect(mSendMessage).toHaveBeenCalledTimes(0);
+      expect(console.error).toHaveBeenCalledWith(`Unable to generate SQS event for record: ${JSON.stringify(event.Records[0])}, no eventID within payload`);
     });
+  });
 
-    it('should load onto SQS if PROCESS_FLAT_TECH_RECORDS is false', async () => {
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
-      process.env.TECHNICAL_RECORDS_UPDATE_STORE_SQS_URL = 'URL';
-      const transformRecordMock = jest.fn();
+  describe('if record has no eventSourceARN', () => {
+    it('should log an error', async () => {
+      const event = {
+        Records: [
+          {
+            eventID: '2222',
+            eventName: 'INSERT',
+            dynamodb: {
+              some: 'thing',
+            },
+          },
+        ],
+      };
 
-      jest
-        .spyOn(_, 'transformTechRecord')
-        .mockImplementation(transformRecordMock);
+      jest.spyOn(console, 'error');
+      await edhMarshaller(event, ctx, () => { return; });
 
-      await edhMarshaller(techEvent, ctx, () => { return; });
+      expect(console.error).toHaveBeenCalledWith(`Unable to generate SQS event for record: ${JSON.stringify(event.Records[0])} eventSourceArn must be defined`);
+    });
+  });
 
-      expect(transformRecordMock).toHaveBeenCalledTimes(0);
-      expect(mSendMessage).toHaveBeenCalledWith({
-        MessageBody: JSON.stringify({
-          eventID: '2222',
-          eventSourceARN: 'technical-records',
-          eventName: 'INSERT',
-          dynamodb: { some: 'thing' },
-        }),
-        QueueUrl: 'URL',
-      });
-      expect(mSendMessage).toHaveBeenCalledTimes(1);
+  describe('if record has an unsupported eventSourceARN', () => {
+    it('should log an error', async () => {
+      const event = {
+        Records: [
+          {
+            eventID: '2222',
+            eventSourceARN: 'unsupported source',
+            eventName: 'INSERT',
+            dynamodb: {
+              some: 'thing',
+            },
+          },
+        ],
+      };
+
+      jest.spyOn(console, 'error');
+      await edhMarshaller(event, ctx, () => { return; });
+
+      expect(console.error).toHaveBeenCalledWith(`Unable to retrieve destination SQS queue URL for record: ${JSON.stringify(event.Records[0])}`);
     });
   });
 
@@ -120,8 +132,7 @@ describe('edhMarshaller Function', () => {
       ],
     };
 
-    it('should load onto SQS if PROCESS_FLAT_TECH_RECORDS is true', async () => {
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'true';
+    it('should load onto SQS after transformation', async () => {
       process.env.TECHNICAL_RECORDS_UPDATE_STORE_SQS_URL = 'URL';
 
       const transformRecordMock = jest.fn();
@@ -143,23 +154,8 @@ describe('edhMarshaller Function', () => {
       });
       expect(mSendMessage).toHaveBeenCalledTimes(1);
     });
-
-    it('should not load onto SQS if PROCESS_FLAT_TECH_RECORDS is false', async () => {
-      process.env.TECHNICAL_RECORDS_UPDATE_STORE_SQS_URL = 'URL';
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
-
-      const transformRecordMock = jest.fn();
-      jest
-        .spyOn(_, 'transformTechRecord')
-        .mockImplementation(transformRecordMock);
-
-      await edhMarshaller(flatTechEvent, ctx, () => { return; });
-
-      expect(transformRecordMock).toHaveBeenCalledTimes(0);
-      expect(mSendMessage).toHaveBeenCalledTimes(0);
-    });
   });
-  
+
   describe('with good test result event', () => {
     const event = {
       Records: [
@@ -176,7 +172,6 @@ describe('edhMarshaller Function', () => {
 
     it('should invoke SQS service with correct params', async () => {
       process.env.TEST_RESULT_UPDATE_STORE_SQS_URL = 'URL';
-      process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
 
       await edhMarshaller(event, ctx, () => { return; });
 
@@ -195,7 +190,6 @@ describe('edhMarshaller Function', () => {
     describe('when SQService throws an error', () => {
       it('should throw the error up', async () => {
         process.env.TEST_RESULT_UPDATE_STORE_SQS_URL = 'FAIL';
-        process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
 
         jest.spyOn(console, 'error');
 
@@ -213,7 +207,7 @@ describe('edhMarshaller Function', () => {
       Records: [
         {
           eventID: '4321',
-          eventSourceARN: 'technical-records',
+          eventSourceARN: 'flat-tech-records',
           eventName: 'INSERT',
           dynamodb: {
             some: 'thing',
@@ -229,7 +223,7 @@ describe('edhMarshaller Function', () => {
         },
         {
           eventID: '1234',
-          eventSourceARN: 'technical-records',
+          eventSourceARN: 'flat-tech-records',
           eventName: 'INSERT',
           dynamodb: {
             some: 'thing',
@@ -242,7 +236,6 @@ describe('edhMarshaller Function', () => {
       it('processes rest of records and returns eventID of failed for retry', async () => {
         process.env.TEST_RESULT_UPDATE_STORE_SQS_URL = 'FAIL';
         process.env.TECHNICAL_RECORDS_UPDATE_STORE_SQS_URL = 'SUCCESS';
-        process.env.PROCESS_FLAT_TECH_RECORDS = 'false';
 
         jest.spyOn(console, 'error');
 
@@ -255,4 +248,3 @@ describe('edhMarshaller Function', () => {
     });
   });
 });
-
